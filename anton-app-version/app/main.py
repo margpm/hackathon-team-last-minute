@@ -17,5 +17,21 @@ async def lifespan(app):
 web_app.router.lifespan_context = lifespan
 
 if __name__ == "__main__":
-    # Run the web server (which also starts the bot via lifespan)
-    uvicorn.run("app.main:web_app", host="0.0.0.0", port=8000, reload=False)
+    import os
+    
+    ssl_keyfile = "certs/key.pem"
+    ssl_certfile = "certs/cert.pem"
+    
+    if not os.path.exists(ssl_keyfile) or not os.path.exists(ssl_certfile):
+        logging.error("SSL certificates not found! Please run deploy.sh to generate them.")
+        exit(1)
+        
+    # Run the web server using HTTPS only
+    uvicorn.run(
+        "app.main:web_app", 
+        host="0.0.0.0", 
+        port=8000, 
+        reload=False,
+        ssl_keyfile=ssl_keyfile,
+        ssl_certfile=ssl_certfile
+    )

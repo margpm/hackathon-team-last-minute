@@ -5,5 +5,7 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
+    volumes:
+      - ./certs:/app/certs
     env_file:
       - .env
