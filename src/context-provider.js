@@ -1,6 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { ThreadsAdapterError, searchThreadsPosts } = require('./threads-adapter');
+
 const DATA_MODES = Object.freeze({
   LIVE_THREADS: 'LIVE_THREADS',
   DEMO_FALLBACK_DATA: 'DEMO_FALLBACK_DATA',
@@ -52,12 +54,12 @@ function normalizeContext(query, dataMode, sourceNotice, posts) {
     posts: posts.map((item) => ({
       id: item.id,
       text: item.text,
-      author: item.author,
+      author: item.author ?? null,
       url: item.url ?? null,
-      created_at: item.created_at,
-      topic: item.topic,
-      claim: item.claim,
-      stance: item.stance,
+      created_at: item.created_at ?? null,
+      ...(item.topic ? { topic: item.topic } : {}),
+      ...(item.claim ? { claim: item.claim } : {}),
+      ...(item.stance ? { stance: item.stance } : {}),
     })),
   };
 }
@@ -71,14 +73,16 @@ async function loadContext(query, options = {}) {
   const dataMode = options.dataMode || process.env.CONTEXT_DATA_MODE || DATA_MODES.DEMO_FALLBACK_DATA;
 
   if (dataMode === DATA_MODES.LIVE_THREADS) {
-    if (typeof options.liveProvider !== 'function') {
-      throw new ContextSourceError(
-        'LIVE_THREADS_NOT_CONFIGURED',
-        'Live Threads retrieval is not configured. Use the clearly labelled fallback dataset.',
-      );
+    const liveProvider = options.liveProvider || searchThreadsPosts;
+    let liveContext;
+    try {
+      liveContext = await liveProvider(cleanQuery, options.threadsOptions || {});
+    } catch (error) {
+      if (error instanceof ThreadsAdapterError) {
+        throw new ContextSourceError(error.code, error.message);
+      }
+      throw error;
     }
-
-    const liveContext = await options.liveProvider(cleanQuery);
     if (!liveContext || !Array.isArray(liveContext.posts)) {
       throw new ContextSourceError('LIVE_THREADS_INVALID_RESPONSE', 'The live Threads provider returned invalid data.');
     }

@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { analyzeContext } = require('../src/contextproof');
+const { analyzeContext, assertResultIntegrity } = require('../src/contextproof');
 
 function post(id, stance) {
   return {
@@ -24,12 +24,10 @@ test('NORMAL confirms a material point only when multiple relevant posts align',
   });
 
   assert.equal(result.confirmed.length, 1);
-  assert.equal(result.confirmed[0].evidence_count, 3);
-  assert.deepEqual(result.confirmed[0].source_ids, ['normal-1', 'normal-2', 'normal-3']);
+  assert.deepEqual(result.confirmed[0].supporting_post_ids, ['normal-1', 'normal-2', 'normal-3']);
   assert.equal(result.conflicts.length, 0);
   assert.equal(result.unknowns.length, 0);
   assert.equal(typeof result.recommended_action, 'object');
-  assert.equal(result.source_summary.relevant_posts, 3);
 });
 
 test('CONFLICT surfaces materially incompatible signals instead of claiming consensus', () => {
@@ -41,8 +39,10 @@ test('CONFLICT surfaces materially incompatible signals instead of claiming cons
 
   assert.equal(result.confirmed.length, 0);
   assert.equal(result.conflicts.length, 1);
-  assert.deepEqual(result.conflicts[0].supporting_source_ids, ['conflict-support']);
-  assert.deepEqual(result.conflicts[0].opposing_source_ids, ['conflict-oppose']);
+  assert.equal(result.conflicts[0].topic, 'AI voice onboarding is useful for routine setup.');
+  assert.match(result.conflicts[0].side_a, /conflict-support/);
+  assert.match(result.conflicts[0].side_b, /conflict-oppose/);
+  assert.deepEqual(result.conflicts[0].post_ids, ['conflict-support', 'conflict-oppose']);
   assert.equal(result.unknowns.length, 0);
   assert.match(result.recommended_action.reason, /conflicting/i);
 });
@@ -60,4 +60,31 @@ test('INSUFFICIENT returns a meaningful UNKNOWN when the context cannot establis
   assert.deepEqual(result.unknowns[0].source_ids, ['insufficient-1']);
   assert.match(result.unknowns[0].reason, /does not establish/i);
   assert.match(result.recommended_action.title, /collect more direct context/i);
+});
+
+test('result integrity rejects source IDs that are absent from retrieved context', () => {
+  const posts = [post('real-source', 'support'), post('second-source', 'support')];
+  const result = {
+    confirmed: [{
+      claim: 'AI voice onboarding is useful for routine setup.',
+      supporting_post_ids: ['real-source', 'invented-source'],
+    }],
+    conflicts: [],
+    unknowns: [],
+    recommended_action: {
+      title: 'Prototype the bounded routine setup flow.',
+      reason: 'Multiple retrieved inputs support this direction.',
+    },
+  };
+
+  assert.throws(
+    () => assertResultIntegrity(result, posts),
+    /unknown source id: invented-source/i,
+  );
+
+  result.confirmed[0].supporting_post_ids = ['real-source', 'real-source'];
+  assert.throws(
+    () => assertResultIntegrity(result, posts),
+    /duplicate source id: real-source/i,
+  );
 });

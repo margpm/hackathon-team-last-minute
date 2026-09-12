@@ -1,5 +1,65 @@
 const VALID_STANCES = new Set(['support', 'oppose', 'unknown']);
 
+function assertNonEmptyString(value, fieldName) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new TypeError(fieldName + ' must be a non-empty string.');
+  }
+}
+
+function assertReferencedIds(ids, knownIds, fieldName, minimum) {
+  if (!Array.isArray(ids) || ids.length < minimum) {
+    throw new TypeError(fieldName + ' must contain at least ' + minimum + ' source IDs.');
+  }
+
+  const uniqueIds = new Set();
+  for (const id of ids) {
+    assertNonEmptyString(id, fieldName + ' source ID');
+    if (!knownIds.has(id)) {
+      throw new TypeError(fieldName + ' references unknown source ID: ' + id);
+    }
+    if (uniqueIds.has(id)) {
+      throw new TypeError(fieldName + ' contains duplicate source ID: ' + id);
+    }
+    uniqueIds.add(id);
+  }
+}
+
+function assertResultIntegrity(result, posts) {
+  if (!result || typeof result !== 'object') {
+    throw new TypeError('ContextProof result must be an object.');
+  }
+
+  const knownIds = new Set(posts.map((item) => item.id));
+  if (!Array.isArray(result.confirmed) || !Array.isArray(result.conflicts) || !Array.isArray(result.unknowns)) {
+    throw new TypeError('ContextProof result must include confirmed, conflicts, and unknowns arrays.');
+  }
+
+  for (const item of result.confirmed) {
+    assertNonEmptyString(item.claim, 'Confirmed claim');
+    assertReferencedIds(item.supporting_post_ids, knownIds, 'Confirmed claim', 2);
+  }
+
+  for (const item of result.conflicts) {
+    assertNonEmptyString(item.topic, 'Conflict topic');
+    assertNonEmptyString(item.side_a, 'Conflict side_a');
+    assertNonEmptyString(item.side_b, 'Conflict side_b');
+    assertReferencedIds(item.post_ids, knownIds, 'Conflict', 2);
+  }
+
+  for (const item of result.unknowns) {
+    assertNonEmptyString(item.question, 'Unknown question');
+    assertNonEmptyString(item.reason, 'Unknown reason');
+  }
+
+  if (!result.recommended_action || typeof result.recommended_action !== 'object') {
+    throw new TypeError('ContextProof result must include exactly one recommended_action object.');
+  }
+  assertNonEmptyString(result.recommended_action.title, 'Recommended action title');
+  assertNonEmptyString(result.recommended_action.reason, 'Recommended action reason');
+
+  return result;
+}
+
 function assertContextInput(input) {
   if (!input || typeof input !== 'object') {
     throw new TypeError('Context input must be an object.');
@@ -13,9 +73,22 @@ function assertContextInput(input) {
     throw new TypeError('Context posts must be an array.');
   }
 
+  const sourceIds = new Set();
   for (const item of input.posts) {
     if (!item || typeof item !== 'object' || typeof item.id !== 'string' || !item.id) {
       throw new TypeError('Every context post must have a non-empty id.');
+    }
+
+    if (sourceIds.has(item.id)) {
+      throw new TypeError('Context post IDs must be unique: ' + item.id);
+    }
+    sourceIds.add(item.id);
+
+    assertNonEmptyString(item.text, 'Context post text');
+    assertNonEmptyString(item.author, 'Context post author');
+    assertNonEmptyString(item.created_at, 'Context post created_at');
+    if (item.url !== null && typeof item.url !== 'string') {
+      throw new TypeError('Every context post url must be a string or null.');
     }
 
     if (typeof item.claim !== 'string' || !item.claim || typeof item.topic !== 'string' || !item.topic) {
@@ -33,8 +106,9 @@ function analyzeContext(input) {
 
   const topics = new Map();
   for (const item of input.posts) {
-    if (!topics.has(item.topic)) {
-      topics.set(item.topic, {
+    const topicKey = item.topic + '\u0000' + item.claim;
+    if (!topics.has(topicKey)) {
+      topics.set(topicKey, {
         claim: item.claim,
         support: [],
         oppose: [],
@@ -42,7 +116,7 @@ function analyzeContext(input) {
       });
     }
 
-    topics.get(item.topic)[item.stance].push(item);
+    topics.get(topicKey)[item.stance].push(item);
   }
 
   const confirmed = [];
@@ -55,16 +129,16 @@ function analyzeContext(input) {
     if (isConfirmed) {
       confirmed.push({
         claim: topic.claim,
-        evidence_count: topic.support.length,
-        source_ids: topic.support.map((item) => item.id),
+        supporting_post_ids: topic.support.map((item) => item.id),
       });
     }
 
     if (isConflict) {
       conflicts.push({
-        claim: topic.claim,
-        supporting_source_ids: topic.support.map((item) => item.id),
-        opposing_source_ids: topic.oppose.map((item) => item.id),
+        topic: topic.claim,
+        side_a: topic.support[0].text,
+        side_b: topic.oppose[0].text,
+        post_ids: [...topic.support, ...topic.oppose].map((item) => item.id),
       });
     }
 
@@ -89,13 +163,13 @@ function analyzeContext(input) {
   }
 
   const hasConflict = conflicts.length > 0;
-  return {
+  const result = {
     confirmed,
     conflicts,
     unknowns,
     recommended_action: {
       title: hasConflict
-        ? `Run a bounded test: ${conflicts[0].claim}`
+        ? `Run a bounded test: ${conflicts[0].topic}`
         : confirmed.length
           ? `Prototype: ${confirmed[0].claim}`
           : 'Collect more direct context before acting.',
@@ -105,15 +179,12 @@ function analyzeContext(input) {
           ? 'Multiple relevant sources support this bounded direction.'
           : 'The available context does not yet support a material decision.',
     },
-    source_summary: {
-      mode: input.data_mode || 'UNKNOWN',
-      total_posts: input.posts.length,
-      relevant_posts: input.posts.length,
-      source_ids: input.posts.map((item) => item.id),
-    },
   };
+
+  return assertResultIntegrity(result, input.posts);
 }
 
 module.exports = {
   analyzeContext,
+  assertResultIntegrity,
 };

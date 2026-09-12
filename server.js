@@ -2,8 +2,9 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 
-const { analyzeContext } = require('./src/contextproof');
+const { analyzeContext, assertResultIntegrity } = require('./src/contextproof');
 const { ContextSourceError, DATA_MODES, loadContext } = require('./src/context-provider');
+const { AnalysisModelError, analyzeWithOpenAI } = require('./src/openai-analyzer');
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 4173;
@@ -65,6 +66,28 @@ function readJsonBody(request) {
   });
 }
 
+async function runAnalysis(context, options) {
+  if (typeof options.analyzer === 'function') {
+    const result = await options.analyzer(context);
+    return {
+      analysisMode: options.analysisMode || 'INJECTED_ANALYZER',
+      result: assertResultIntegrity(result, context.posts),
+    };
+  }
+
+  if (context.data_mode === DATA_MODES.LIVE_THREADS) {
+    return {
+      analysisMode: 'OPENAI_STRUCTURED',
+      result: await analyzeWithOpenAI(context, options.openaiOptions || {}),
+    };
+  }
+
+  return {
+    analysisMode: 'DETERMINISTIC_FALLBACK',
+    result: analyzeContext(context),
+  };
+}
+
 async function serveStatic(pathname, response) {
   const asset = STATIC_FILES.get(pathname);
   if (!asset) {
@@ -92,9 +115,11 @@ function createAppServer(options = {}) {
         sendJson(response, 200, {
           status: 'ok',
           data_mode: dataMode,
-          analysis_engine: 'DETERMINISTIC_LOCAL',
+          analysis_engine: dataMode === DATA_MODES.LIVE_THREADS
+            ? (process.env.OPENAI_API_KEY ? 'OPENAI_STRUCTURED' : 'BLOCKED_MISSING_OPENAI_CREDENTIALS')
+            : 'DETERMINISTIC_FALLBACK',
           threads_status: process.env.THREADS_ACCESS_TOKEN
-            ? 'TOKEN_PRESENT_LIVE_ADAPTER_REQUIRED'
+            ? 'CREDENTIAL_PRESENT_LIVE_ADAPTER_READY'
             : 'BLOCKED_MISSING_CREDENTIALS',
         });
         return;
@@ -112,14 +137,16 @@ function createAppServer(options = {}) {
         const context = await loadContext(body.query, {
           dataMode,
           liveProvider: options.liveProvider,
+          threadsOptions: options.threadsOptions,
         });
-        const result = analyzeContext(context);
+        const analysis = await runAnalysis(context, options);
 
         sendJson(response, 200, {
           query: context.query,
           data_mode: context.data_mode,
+          analysis_mode: analysis.analysisMode,
           source_notice: context.source_notice,
-          result,
+          result: analysis.result,
           sources: context.posts.map((item) => ({
             id: item.id,
             text: item.text,
@@ -139,6 +166,11 @@ function createAppServer(options = {}) {
       sendJson(response, 405, { error: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.' });
     } catch (error) {
       if (error instanceof ContextSourceError) {
+        sendJson(response, 503, { error: error.code, message: error.message });
+        return;
+      }
+
+      if (error instanceof AnalysisModelError) {
         sendJson(response, 503, { error: error.code, message: error.message });
         return;
       }

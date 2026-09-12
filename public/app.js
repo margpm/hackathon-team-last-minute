@@ -51,7 +51,7 @@ function renderFindings(result) {
     appendFinding(
       confirmedList,
       finding.claim,
-      finding.evidence_count + ' aligned sources: ' + finding.source_ids.join(', '),
+      finding.supporting_post_ids.length + ' aligned sources: ' + finding.supporting_post_ids.join(', '),
     );
   }
   if (result.confirmed.length === 0) {
@@ -61,8 +61,8 @@ function renderFindings(result) {
   for (const finding of result.conflicts) {
     appendFinding(
       conflictList,
-      finding.claim,
-      'For: ' + finding.supporting_source_ids.join(', ') + ' | Against: ' + finding.opposing_source_ids.join(', '),
+      finding.topic,
+      'Side A: ' + finding.side_a + ' | Side B: ' + finding.side_b + ' | Sources: ' + finding.post_ids.join(', '),
     );
   }
   if (result.conflicts.length === 0) {
@@ -89,9 +89,13 @@ function renderSources(sources) {
     const text = document.createElement('strong');
     const reference = document.createElement('span');
 
-    author.textContent = source.author;
+    author.textContent = source.author || 'Author unavailable';
     text.textContent = source.text;
-    reference.textContent = source.id + ' | ' + new Date(source.created_at).toISOString().slice(0, 10);
+    const sourceDate = source.created_at ? new Date(source.created_at) : null;
+    const dateLabel = sourceDate && !Number.isNaN(sourceDate.valueOf())
+      ? ' | ' + sourceDate.toISOString().slice(0, 10)
+      : '';
+    reference.textContent = source.id + dateLabel;
     item.append(author, text, reference);
     sourceList.append(item);
   }
@@ -99,7 +103,7 @@ function renderSources(sources) {
 
 function renderResult(payload) {
   sourceTruth.textContent = payload.data_mode;
-  sourceNotice.textContent = payload.source_notice;
+  sourceNotice.textContent = payload.source_notice + ' Analysis: ' + payload.analysis_mode + '.';
   sourceCount.textContent = payload.sources.length + ' relevant source' + (payload.sources.length === 1 ? '' : 's');
   sourceSummary.textContent = payload.sources.length + ' local references';
   renderFindings(payload.result);
@@ -164,4 +168,18 @@ approveButton.addEventListener('click', () => {
   approvalStatus.classList.add('approved');
 });
 
-analyze();
+async function initialize() {
+  try {
+    const response = await fetch('/api/health');
+    const health = await response.json();
+    if (response.ok && health.data_mode) {
+      sourceTruth.textContent = health.data_mode;
+    }
+  } catch {
+    // The analysis request below owns the visible connection error state.
+  }
+
+  await analyze();
+}
+
+initialize();
