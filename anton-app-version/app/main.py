@@ -4,9 +4,19 @@ import logging
 from contextlib import asynccontextmanager
 from app.bot import start_bot
 from app.web import web_app
+from app.database import init_db, get_all_tokens
+import os
 
 @asynccontextmanager
 async def lifespan(app):
+    # Ensure data directory exists
+    os.makedirs("data", exist_ok=True)
+    
+    # Initialize the database and re-pick up tokens
+    await init_db()
+    tokens = await get_all_tokens()
+    logging.info(f"Loaded {len(tokens)} long-lived Meta tokens from database.")
+    
     # Start the telegram bot in the background
     logging.info("Starting Telegram Bot...")
     task = asyncio.create_task(start_bot())
