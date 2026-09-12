@@ -1,0 +1,76 @@
+{
+  "data_mode": "DEMO_FALLBACK_DATA",
+  "source_notice": "Synthetic hackathon dataset. This is not live Threads data.",
+  "posts": [
+    {
+      "id": "demo-routine-01",
+      "text": "A short voice walkthrough for routine workspace setup would save me from opening several help pages.",
+      "author": "Demo participant 01",
+      "url": null,
+      "created_at": "2026-09-12T08:10:00Z",
+      "topic": "routine_setup",
+      "claim": "AI voice onboarding is useful for routine setup.",
+      "stance": "support"
+    },
+    {
+      "id": "demo-routine-02",
+      "text": "Voice guidance during permissions and profile setup would make the first session easier on mobile.",
+      "author": "Demo participant 02",
+      "url": null,
+      "created_at": "2026-09-12T08:18:00Z",
+      "topic": "routine_setup",
+      "claim": "AI voice onboarding is useful for routine setup.",
+      "stance": "support"
+    },
+    {
+      "id": "demo-routine-03",
+      "text": "For standard setup steps, I would use a voice onboarding guide before booking a person.",
+      "author": "Demo participant 03",
+      "url": null,
+      "created_at": "2026-09-12T08:26:00Z",
+      "topic": "routine_setup",
+      "claim": "AI voice onboarding is useful for routine setup.",
+      "stance": "support"
+    },
+    {
+      "id": "demo-replace-01",
+      "text": "For a simple account, I would replace the standard kickoff call with a voice walkthrough.",
+      "author": "Demo participant 04",
+      "url": null,
+      "created_at": "2026-09-12T08:34:00Z",
+      "topic": "replace_human_kickoff",
+      "claim": "AI voice onboarding should replace the human kickoff call.",
+      "stance": "support"
+    },
+    {
+      "id": "demo-replace-02",
+      "text": "Do not replace the kickoff call with a bot; I need a person when workflow decisions are involved.",
+      "author": "Demo participant 05",
+      "url": null,
+      "created_at": "2026-09-12T08:42:00Z",
+      "topic": "replace_human_kickoff",
+      "claim": "AI voice onboarding should replace the human kickoff call.",
+      "stance": "oppose"
+    },
+    {
+      "id": "demo-replace-03",
+      "text": "A voice guide is fine for setup, but a human kickoff is still necessary for complex accounts.",
+      "author": "Demo participant 06",
+      "url": null,
+      "created_at": "2026-09-12T08:50:00Z",
+      "topic": "replace_human_kickoff",
+      "claim": "AI voice onboarding should replace the human kickoff call.",
+      "stance": "oppose"
+    },
+    {
+      "id": "demo-retention-01",
+      "text": "Has anyone measured whether voice onboarding improves long-term retention? I have not seen evidence.",
+      "author": "Demo participant 07",
+      "url": null,
+      "created_at": "2026-09-12T08:58:00Z",
+      "topic": "retention_impact",
+      "claim": "AI voice onboarding improves long-term retention.",
+      "stance": "unknown"
+    }
+  ]
+}

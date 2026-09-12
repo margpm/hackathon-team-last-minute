@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="ContextProof turns relevant public context into one human-approved next action.">
+  <title>ContextProof</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="ContextProof home">ContextProof</a>
+    <div class="source-truth" id="source-truth" data-testid="source-truth">
+      <span class="source-dot" aria-hidden="true"></span>
+      <span>DEMO_FALLBACK_DATA</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="query-stage" aria-labelledby="page-title">
+      <p class="eyebrow">Decision context before action</p>
+      <h1 id="page-title">What should I do based on what people are actually saying?</h1>
+      <p class="mission">ContextProof isolates the evidence that changes the decision, exposes uncertainty, and recommends one bounded next action.</p>
+
+      <form id="analysis-form" class="analysis-form">
+        <label for="query">Question</label>
+        <div class="query-row">
+          <textarea id="query" name="query" rows="2" minlength="3" maxlength="300" required>Should we build AI voice onboarding?</textarea>
+          <button class="analyze-button" type="submit" id="analyze-button">
+            <span>Analyze context</span>
+            <span aria-hidden="true">&rarr;</span>
+          </button>
+        </div>
+        <p class="source-notice" id="source-notice">Loading source status...</p>
+      </form>
+
+      <p class="error-message" id="error-message" role="alert" hidden></p>
+    </section>
+
+    <section class="result-stage" id="result-stage" aria-labelledby="result-title" aria-live="polite" hidden>
+      <div class="result-heading">
+        <div>
+          <p class="eyebrow">Structured ContextProof result</p>
+          <h2 id="result-title">What the context establishes</h2>
+        </div>
+        <p class="source-count" id="source-count" data-testid="source-count"></p>
+      </div>
+
+      <div class="state-grid">
+        <article class="state-panel state-confirmed" data-testid="confirmed-panel">
+          <header>
+            <span class="state-index">01</span>
+            <h3>CONFIRMED</h3>
+          </header>
+          <ul class="finding-list" id="confirmed-list"></ul>
+        </article>
+
+        <article class="state-panel state-conflict" data-testid="conflict-panel">
+          <header>
+            <span class="state-index">02</span>
+            <h3>CONFLICT</h3>
+          </header>
+          <ul class="finding-list" id="conflict-list"></ul>
+        </article>
+
+        <article class="state-panel state-unknown" data-testid="unknown-panel">
+          <header>
+            <span class="state-index">03</span>
+            <h3>UNKNOWN</h3>
+          </header>
+          <ul class="finding-list" id="unknown-list"></ul>
+        </article>
+      </div>
+
+      <section class="action-panel" aria-labelledby="action-title">
+        <div>
+          <p class="eyebrow">One best next action</p>
+          <h2 id="action-title" data-testid="action-title">Analysis pending</h2>
+          <p class="action-reason" id="action-reason">Run context analysis to produce one bounded recommendation.</p>
+        </div>
+        <div class="approval-control">
+          <button class="approve-button" type="button" id="approve-button">Approve</button>
+          <output class="approval-status" id="approval-status" for="approve-button" data-testid="approval-status">Awaiting human approval</output>
+        </div>
+      </section>
+
+      <details class="sources">
+        <summary>
+          <span>Source references</span>
+          <span id="source-summary"></span>
+        </summary>
+        <ol class="source-list" id="source-list"></ol>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <span>Context matters only when it changes the action.</span>
+    <span>Human approval is required.</span>
+  </footer>
+</body>
+</html>
