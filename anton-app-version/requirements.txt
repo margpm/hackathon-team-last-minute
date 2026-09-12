@@ -1,0 +1,5 @@
+aiogram>=3.3.0
+litellm>=1.15.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
