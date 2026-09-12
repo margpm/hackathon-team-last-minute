@@ -1,6 +1,9 @@
 import litellm
 from app.config import settings
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Set API keys for litellm so it can route to any provider
 if settings.openai_api_key:
@@ -23,8 +26,12 @@ async def generate_response(prompt: str, thread_id: str = None, model: str = Non
         {"role": "user", "content": prompt}
     ]
     
+    logger.debug(f"Calling LLM ({chosen_model}) for thread {thread_id} with {len(messages)} messages.")
+    
     response = await litellm.acompletion(
         model=chosen_model,
         messages=messages,
     )
+    
+    logger.debug(f"LLM successfully returned response for thread {thread_id}.")
     return response.choices[0].message.content

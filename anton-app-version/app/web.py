@@ -5,6 +5,8 @@ import logging
 from app.config import settings
 from app.database import save_token
 
+logger = logging.getLogger(__name__)
+
 web_app = FastAPI()
 
 @web_app.get("/login", response_class=HTMLResponse)
@@ -33,13 +35,13 @@ async def callback(code: str = None, state: str = None, error: str = None, error
     Extracts the authorization code and exchanges it for an access token.
     """
     if error:
-        logging.error(f"Meta OAuth Error: {error} - {error_description}")
+        logger.error(f"Meta OAuth Error: {error} - {error_description}")
         return {"status": "error", "message": error_description}
         
     if not code:
         return {"status": "error", "message": "No authorization code provided."}
         
-    logging.info(f"Received Meta authorization code (state/telegram_id: {state}). Exchanging for token...")
+    logger.info(f"Received Meta authorization code (state/telegram_id: {state}). Exchanging for token...")
     
     # Exchange the code for an access token
     token_url = "https://graph.threads.net/oauth/access_token"
@@ -55,7 +57,7 @@ async def callback(code: str = None, state: str = None, error: str = None, error
         async with session.post(token_url, data=payload) as response:
             data = await response.json()
             if response.status != 200:
-                logging.error(f"Failed to get token: {data}")
+                logger.error(f"Failed to get token: {data}")
                 return {"status": "error", "message": "Failed to exchange code for token.", "details": data}
                 
             short_lived_token = data.get("access_token")
@@ -64,7 +66,7 @@ async def callback(code: str = None, state: str = None, error: str = None, error
             if not short_lived_token:
                 return {"status": "error", "message": "No access token in response"}
                 
-            logging.info(f"Got short-lived token for user {user_id}. Exchanging for long-lived token...")
+            logger.info(f"Got short-lived token for user {user_id}. Exchanging for long-lived token...")
             
             # Exchange for long-lived token
             long_lived_url = (
@@ -77,7 +79,7 @@ async def callback(code: str = None, state: str = None, error: str = None, error
             async with session.get(long_lived_url) as ll_response:
                 ll_data = await ll_response.json()
                 if ll_response.status != 200:
-                    logging.error(f"Failed to get long-lived token: {ll_data}")
+                    logger.error(f"Failed to get long-lived token: {ll_data}")
                     return {"status": "error", "message": "Failed to exchange for long-lived token.", "details": ll_data}
                 
                 long_lived_token = ll_data.get("access_token")
@@ -91,7 +93,7 @@ async def callback(code: str = None, state: str = None, error: str = None, error
                     expires_in=expires_in
                 )
                 
-                logging.info(f"Successfully authenticated and saved long-lived token for Threads user: {user_id}")
+                logger.info(f"Successfully authenticated and saved long-lived token for Threads user: {user_id}")
                 
                 return {
                     "status": "success", 

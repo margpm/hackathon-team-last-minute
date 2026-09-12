@@ -1,6 +1,8 @@
 import aiosqlite
 import logging
 
+logger = logging.getLogger(__name__)
+
 DB_PATH = "data/app.db"
 
 async def init_db():
@@ -15,7 +17,7 @@ async def init_db():
             )
         ''')
         await db.commit()
-    logging.info("Database initialized.")
+    logger.info("Database initialized.")
 
 async def save_token(threads_user_id: str, long_lived_token: str, telegram_user_id: str = None, expires_in: int = 0):
     """Save or update a Meta Threads token."""
@@ -32,7 +34,7 @@ async def save_token(threads_user_id: str, long_lived_token: str, telegram_user_
                 expires_at = excluded.expires_at
         ''', (threads_user_id, long_lived_token, telegram_user_id, expires_at))
         await db.commit()
-    logging.info(f"Saved long-lived token for Threads user: {threads_user_id}")
+    logger.info(f"Saved long-lived token for Threads user: {threads_user_id}")
 
 async def get_token_by_telegram_id(telegram_user_id: str):
     """Retrieve a token using the Telegram User ID."""

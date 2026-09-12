@@ -2,6 +2,13 @@ import uvicorn
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from app.logger import setup_logging
+
+logger = logging.getLogger(__name__)
+
+# Setup logging immediately
+setup_logging()
+
 from app.bot import start_bot
 from app.web import web_app
 from app.database import init_db, get_all_tokens
@@ -15,10 +22,10 @@ async def lifespan(app):
     # Initialize the database and re-pick up tokens
     await init_db()
     tokens = await get_all_tokens()
-    logging.info(f"Loaded {len(tokens)} long-lived Meta tokens from database.")
+    logger.info(f"Loaded {len(tokens)} long-lived Meta tokens from database.")
     
     # Start the telegram bot in the background
-    logging.info("Starting Telegram Bot...")
+    logger.info("Starting Telegram Bot...")
     task = asyncio.create_task(start_bot())
     yield
     # Cleanup on shutdown (cancel the bot task if needed)
@@ -33,7 +40,7 @@ if __name__ == "__main__":
     ssl_certfile = "certs/cert.pem"
     
     if not os.path.exists(ssl_keyfile) or not os.path.exists(ssl_certfile):
-        logging.error("SSL certificates not found! Please run deploy.sh to generate them.")
+        logger.error("SSL certificates not found! Please run deploy.sh to generate them.")
         exit(1)
         
     # Run the web server using HTTPS only
