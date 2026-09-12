@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     meta_client_id: str | None = None
     meta_client_secret: str | None = None
     meta_redirect_uri: str = "https://your-domain.com/callback"
+    
+    # Bluesky / AT Protocol API
+    bluesky_handle: str | None = None
+    bluesky_app_password: str | None = None
 
     class Config:
         env_file = ".env"
