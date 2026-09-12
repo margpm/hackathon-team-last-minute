@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="ContextProof four-hour hackathon team brief.">
+  <title>ContextProof | Hackathon Team Brief</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090b0d;
+      --surface: #101419;
+      --surface-raised: #151a20;
+      --line: #29313a;
+      --line-strong: #3b4651;
+      --text: #f4f7f8;
+      --muted: #9da8b2;
+      --quiet: #737f89;
+      --mint: #78e0bb;
+      --blue: #8ab8ff;
+      --amber: #f0bd68;
+      --coral: #ff8277;
+      --white: #ffffff;
+      --max: 1160px;
+      --radius: 6px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-width: 280px;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .shell {
+      width: min(calc(100% - 48px), var(--max));
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--mint);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.4;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .hero {
+      padding: 52px 0 42px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 28px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .brand-mark {
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .build-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px 18px;
+      text-align: right;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.55fr);
+      gap: 68px;
+      align-items: end;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: 64px;
+      font-weight: 760;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .mission {
+      max-width: 760px;
+      margin: 24px 0 0;
+      color: #d9e0e4;
+      font-size: 22px;
+      line-height: 1.4;
+    }
+
+    .positioning {
+      margin: 30px 0 0;
+      padding-left: 18px;
+      border-left: 3px solid var(--mint);
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .positioning strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .states {
+      padding: 22px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .states-label {
+      margin: 0 0 16px;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .state {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 45px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .state:first-of-type {
+      border-top: 0;
+    }
+
+    .state small {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .confirmed {
+      color: var(--mint);
+    }
+
+    .conflict {
+      color: var(--coral);
+    }
+
+    .unknown {
+      color: var(--amber);
+    }
+
+    .magic {
+      border-bottom: 1px solid var(--line);
+      background: var(--mint);
+      color: #07100d;
+    }
+
+    .magic .shell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      min-height: 82px;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+
+    .magic strong {
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .magic span {
+      max-width: 500px;
+      font-size: 14px;
+      font-weight: 650;
+      text-align: right;
+    }
+
+    main {
+      display: block;
+    }
+
+    section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1.45fr);
+      gap: 56px;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 740;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .section-intro {
+      max-width: 720px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .flow-step {
+      position: relative;
+      min-width: 0;
+      min-height: 152px;
+      padding: 18px 14px;
+      border-left: 1px solid var(--line);
+    }
+
+    .flow-step:first-child {
+      border-left: 0;
+    }
+
+    .flow-step::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 3px;
+      background: var(--blue);
+    }
+
+    .flow-step:nth-child(4)::before {
+      background: var(--amber);
+    }
+
+    .flow-step:nth-child(5)::before {
+      background: var(--mint);
+    }
+
+    .flow-step:nth-child(6)::before {
+      background: var(--white);
+    }
+
+    .flow-step:nth-child(7)::before {
+      background: var(--mint);
+    }
+
+    .step-number {
+      display: block;
+      margin-bottom: 24px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .flow-step strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .flow-step span:last-child {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .demo-contract {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);
+      gap: 34px;
+      margin-top: 34px;
+    }
+
+    .demo-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: demo;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .demo-list li {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      color: #d5dce0;
+      counter-increment: demo;
+    }
+
+    .demo-list li::before {
+      content: counter(demo, decimal-leading-zero);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .output-contract {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .output-contract h3 {
+      margin: 0 0 16px;
+      font-size: 15px;
+    }
+
+    .contract-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 9px 0;
+      border-top: 1px solid var(--line);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .contract-row span:first-child {
+      color: var(--quiet);
+    }
+
+    .contract-row span:last-child {
+      color: var(--text);
+      text-align: right;
+    }
+
+    .milestone {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 38px;
+      padding: 30px;
+      border: 1px solid var(--blue);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .milestone-time {
+      color: var(--blue);
+      font-size: 42px;
+      font-weight: 780;
+      line-height: 1;
+    }
+
+    .milestone-time span {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .milestone h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .milestone p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .acceptance-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .acceptance-row span {
+      padding: 5px 9px;
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      color: #cbd3d8;
+      font-size: 12px;
+    }
+
+    .definition {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 34px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .definition li {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 14px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      color: #d5dce0;
+    }
+
+    .definition .check {
+      color: var(--mint);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .definition strong {
+      color: var(--text);
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 22px;
+    }
+
+    .team-member {
+      min-width: 0;
+      padding-top: 18px;
+      border-top: 3px solid var(--line-strong);
+    }
+
+    .team-member:nth-child(1) {
+      border-top-color: var(--mint);
+    }
+
+    .team-member:nth-child(2) {
+      border-top-color: var(--blue);
+    }
+
+    .team-member:nth-child(3) {
+      border-top-color: var(--amber);
+    }
+
+    .team-member:nth-child(4) {
+      border-top-color: var(--coral);
+    }
+
+    .team-member h3 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .role {
+      min-height: 48px;
+      margin: 5px 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .team-member p:last-child {
+      margin: 0;
+      color: #d0d7dc;
+      font-size: 14px;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .time-block {
+      min-width: 0;
+      padding: 18px 16px 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .time-block + .time-block {
+      padding-left: 16px;
+      border-left: 1px solid var(--line);
+    }
+
+    .time-label {
+      display: block;
+      margin-bottom: 11px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .time-block strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .time-block p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .freeze {
+      color: var(--coral);
+    }
+
+    .criteria {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px 44px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: criteria;
+    }
+
+    .criteria li {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 16px;
+      padding: 20px 0;
+      border-top: 1px solid var(--line-strong);
+      counter-increment: criteria;
+    }
+
+    .criteria li::before {
+      content: "0" counter(criteria);
+      color: var(--mint);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .criteria h3 {
+      margin: 0 0 7px;
+      font-size: 16px;
+    }
+
+    .criteria p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .guardrails {
+      display: grid;
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+      gap: 50px;
+    }
+
+    .non-goals {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .non-goals li {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      color: #cbd3d8;
+      font-size: 14px;
+    }
+
+    .fallback {
+      padding: 28px;
+      border: 1px solid var(--amber);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .fallback-gate {
+      display: inline-block;
+      margin-bottom: 14px;
+      color: var(--amber);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .fallback h3 {
+      margin: 0 0 12px;
+      font-size: 23px;
+    }
+
+    .fallback p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .fallback-rule {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    footer {
+      padding: 32px 0 42px;
+      color: var(--quiet);
+      font-size: 12px;
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 34px;
+      }
+
+      .states {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0 20px;
+      }
+
+      .states-label {
+        grid-column: 1 / -1;
+      }
+
+      .state {
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+      }
+
+      .state small {
+        text-align: left;
+      }
+
+      .flow {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .flow-step {
+        border-top: 1px solid var(--line);
+      }
+
+      .flow-step:nth-child(-n + 4) {
+        border-top: 0;
+      }
+
+      .flow-step:nth-child(5) {
+        border-left: 0;
+      }
+
+      .team-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 34px;
+      }
+
+      .timeline {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .time-block:nth-child(4) {
+        padding-left: 0;
+        border-left: 0;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .shell {
+        width: min(calc(100% - 28px), var(--max));
+      }
+
+      .hero {
+        padding: 24px 0 32px;
+      }
+
+      .hero-top {
+        align-items: flex-start;
+        padding-bottom: 36px;
+      }
+
+      .build-meta {
+        display: block;
+      }
+
+      .build-meta span {
+        display: block;
+      }
+
+      h1 {
+        font-size: 43px;
+      }
+
+      .mission {
+        font-size: 19px;
+      }
+
+      .states {
+        display: block;
+        padding: 18px;
+      }
+
+      .magic .shell {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+        padding-top: 18px;
+        padding-bottom: 18px;
+      }
+
+      .magic span {
+        text-align: left;
+      }
+
+      section {
+        padding: 48px 0;
+      }
+
+      .section-head {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        margin-bottom: 26px;
+      }
+
+      h2 {
+        font-size: 27px;
+      }
+
+      .flow {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .flow-step {
+        min-height: 0;
+        padding: 17px 16px 17px 60px;
+        border-top: 1px solid var(--line);
+        border-left: 0;
+      }
+
+      .flow-step:nth-child(-n + 4) {
+        border-top: 1px solid var(--line);
+      }
+
+      .flow-step:first-child {
+        border-top: 0;
+      }
+
+      .flow-step::before {
+        width: 3px;
+        height: 100%;
+      }
+
+      .step-number {
+        position: absolute;
+        top: 19px;
+        left: 18px;
+        margin: 0;
+      }
+
+      .demo-contract,
+      .guardrails {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .milestone {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 22px;
+        padding: 22px;
+      }
+
+      .definition,
+      .team-grid,
+      .criteria {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .role {
+        min-height: 0;
+      }
+
+      .timeline {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .time-block,
+      .time-block + .time-block,
+      .time-block:nth-child(4) {
+        padding: 16px 0;
+        border-left: 0;
+      }
+
+      .footer-row {
+        flex-direction: column;
+        gap: 6px;
+      }
+    }
+
+    @media print {
+      :root {
+        --bg: #ffffff;
+        --surface: #f5f7f8;
+        --surface-raised: #ffffff;
+        --line: #ccd2d7;
+        --line-strong: #949ea7;
+        --text: #111417;
+        --muted: #45515b;
+        --quiet: #5f6b75;
+        --mint: #087858;
+        --blue: #285fa8;
+        --amber: #8a5700;
+        --coral: #a33129;
+        --white: #111417;
+      }
+
+      body {
+        font-size: 11pt;
+      }
+
+      .hero,
+      section {
+        padding: 26px 0;
+      }
+
+      .magic {
+        color: #07100d;
+      }
+
+      .flow-step,
+      .team-member,
+      .criteria li,
+      .time-block {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="shell">
+      <div class="hero-top">
+        <div class="brand-mark">ContextProof</div>
+        <div class="build-meta">
+          <span>Hackathon team brief</span>
+          <span>12 Sep 2026</span>
+          <span>4-hour build</span>
+        </div>
+      </div>
+
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">Decision context before agent action</p>
+          <h1>ContextProof</h1>
+          <p class="mission">Find the public conversation context that matters, resolve what it means, and put one defensible next action under human control.</p>
+          <p class="positioning">
+            Our advantage is not &ldquo;more context.&rdquo;
+            <strong>Our advantage is knowing which context matters before an agent acts.</strong>
+          </p>
+        </div>
+
+        <aside class="states" aria-label="ContextProof decision states">
+          <p class="states-label">Decision states</p>
+          <div class="state confirmed">
+            <span>CONFIRMED</span>
+            <small>Evidence aligns</small>
+          </div>
+          <div class="state conflict">
+            <span>CONFLICT</span>
+            <small>Evidence disagrees</small>
+          </div>
+          <div class="state unknown">
+            <span>UNKNOWN</span>
+            <small>Evidence is insufficient</small>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </header>
+
+  <div class="magic">
+    <div class="shell">
+      <strong>ONE WORKING MAGIC MOMENT &gt; TEN GOOD FEATURES</strong>
+      <span>Protect the complete question-to-approved-result loop. Everything else is optional.</span>
+    </div>
+  </div>
+
+  <main>
+    <section id="flow">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">01 / Product</p>
+            <h2>The exact flow</h2>
+          </div>
+          <p class="section-intro">A real question enters. ContextProof retrieves public conversation context, isolates the signals that matter, and refuses to hide uncertainty before action.</p>
+        </div>
+
+        <div class="flow" role="list" aria-label="ContextProof product flow">
+          <div class="flow-step" role="listitem">
+            <span class="step-number">01</span>
+            <strong>User question</strong>
+            <span>Real decision, plainly asked.</span>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-number">02</span>
+            <strong>Threads / public context</strong>
+            <span>Live or clearly labelled fallback.</span>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-number">03</span>
+            <strong>Relevant signals</strong>
+            <span>Only evidence that changes the decision.</span>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-number">04</span>
+            <strong>Decision state</strong>
+            <span>CONFIRMED, CONFLICT, or UNKNOWN.</span>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-number">05</span>
+            <strong>One best next action</strong>
+            <span>Exactly one, tied to evidence.</span>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-number">06</span>
+            <strong>Human approval</strong>
+            <span>Approve or reject before execution.</span>
+          </div>
+          <div class="flow-step" role="listitem">
+            <span class="step-number">07</span>
+            <strong>Visible result</strong>
+            <span>Outcome, honest UNKNOWN, or failure.</span>
+          </div>
+        </div>
+
+        <div class="demo-contract">
+          <ol class="demo-list" aria-label="Demo sequence">
+            <li><span>Ask one credible user question in the interface.</span></li>
+            <li><span>Show the source as <strong>LIVE THREADS</strong> or <strong>FALLBACK DATA</strong>.</span></li>
+            <li><span>Expose the small set of evidence that materially affects the answer.</span></li>
+            <li><span>Render one decision state with a concise reason.</span></li>
+            <li><span>Present exactly one next action and wait for approval.</span></li>
+            <li><span>After approval, show the result or an explicit failure state.</span></li>
+          </ol>
+
+          <aside class="output-contract" aria-label="Shared structured output contract">
+            <h3>Shared output contract</h3>
+            <div class="contract-row">
+              <span>source</span>
+              <span>threads | fallback</span>
+            </div>
+            <div class="contract-row">
+              <span>signals[]</span>
+              <span>claim + evidence</span>
+            </div>
+            <div class="contract-row">
+              <span>state</span>
+              <span>confirmed | conflict | unknown</span>
+            </div>
+            <div class="contract-row">
+              <span>next_action</span>
+              <span>exactly one</span>
+            </div>
+            <div class="contract-row">
+              <span>approval</span>
+              <span>required</span>
+            </div>
+            <div class="contract-row">
+              <span>result</span>
+              <span>visible | unknown | failed</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="milestone">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">02 / First integration gate</p>
+            <h2>First 45 minutes</h2>
+          </div>
+          <p class="section-intro">The first milestone is an integrated vertical slice, not four isolated components. Reduce fidelity until this path exists end to end.</p>
+        </div>
+
+        <div class="milestone">
+          <div class="milestone-time">
+            0:45
+            <span>Hard milestone</span>
+          </div>
+          <div>
+            <h3>Question &rarr; some data &rarr; structured ContextProof output &rarr; visible UI</h3>
+            <p>Live Threads is preferred. Clearly labelled fallback data is acceptable. The milestone passes only when the browser shows the complete path using the shared output contract.</p>
+            <div class="acceptance-row" role="list" aria-label="First milestone acceptance checks">
+              <span role="listitem">Question entered</span>
+              <span role="listitem">Source labelled</span>
+              <span role="listitem">Signals structured</span>
+              <span role="listitem">State visible</span>
+              <span role="listitem">One action shown</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="done">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">03 / Acceptance</p>
+            <h2>Definition of Done</h2>
+          </div>
+          <p class="section-intro">Done means one complete, honest workflow that can be demonstrated in under two minutes. A polished partial flow does not pass.</p>
+        </div>
+
+        <ul class="definition">
+          <li><span class="check">01</span><span>A <strong>real user question</strong> starts the flow.</span></li>
+          <li><span class="check">02</span><span>Threads search runs, or the interface shows a <strong>clearly labelled fallback source</strong>.</span></li>
+          <li><span class="check">03</span><span>Retrieved context is normalized into a <strong>stable structured shape</strong>.</span></li>
+          <li><span class="check">04</span><span>The result is explicitly <strong>CONFIRMED, CONFLICT, or UNKNOWN</strong>.</span></li>
+          <li><span class="check">05</span><span>The system proposes <strong>exactly one best next action</strong>.</span></li>
+          <li><span class="check">06</span><span>No action runs before a visible <strong>human approval gate</strong>.</span></li>
+          <li><span class="check">07</span><span>Approval produces a <strong>visible result</strong>, honest UNKNOWN, or explicit failure.</span></li>
+          <li><span class="check">08</span><span>The complete flow is <strong>demonstrable in under two minutes</strong>.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="team">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">04 / Ownership</p>
+            <h2>Four people, four outcomes</h2>
+          </div>
+          <p class="section-intro">Each owner finishes a demo-critical outcome and integrates early. Volo owns the final cross-functional call when scope or timing conflicts.</p>
+        </div>
+
+        <div class="team-grid">
+          <article class="team-member">
+            <h3>Volo</h3>
+            <p class="role">PM / Product / Integration / Demo</p>
+            <p>Own scope, milestones, blockers, judging fit, integration, the two-minute demo, and final submission.</p>
+          </article>
+          <article class="team-member">
+            <h3>Mar</h3>
+            <p class="role">Visual PM / UX</p>
+            <p>Own the one main experience and make the value understandable within three seconds.</p>
+          </article>
+          <article class="team-member">
+            <h3>Anton</h3>
+            <p class="role">Backend / Data / Threads</p>
+            <p>Own Threads retrieval, normalization, deduplication, and stable context JSON.</p>
+          </article>
+          <article class="team-member">
+            <h3>Natalia</h3>
+            <p class="role">Full-stack / Agent / Integration</p>
+            <p>Own the structured agent result, frontend/backend integration, and approval-to-result flow.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="timeline">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">05 / Execution</p>
+            <h2>Four-hour timeline</h2>
+          </div>
+          <p class="section-intro">Integrate from minute fifteen. Freeze features at 2:45 and protect the final eighty minutes for proof, demo stability, and submission.</p>
+        </div>
+
+        <div class="timeline">
+          <div class="time-block">
+            <span class="time-label">0:00&ndash;0:15</span>
+            <strong>Lock scope</strong>
+            <p>One question, one flow, one action. Agree the shared output contract.</p>
+          </div>
+          <div class="time-block">
+            <span class="time-label">0:15&ndash;1:00</span>
+            <strong>First vertical slice</strong>
+            <p>Question to some data to structured output to visible UI.</p>
+          </div>
+          <div class="time-block">
+            <span class="time-label">1:00&ndash;2:00</span>
+            <strong>Real end-to-end flow</strong>
+            <p>Connect retrieval, reasoning, interface, approval, and result.</p>
+          </div>
+          <div class="time-block">
+            <span class="time-label">2:00&ndash;2:45</span>
+            <strong>Decision behavior</strong>
+            <p>CONFIRMED / CONFLICT / UNKNOWN, one action, approval, result.</p>
+          </div>
+          <div class="time-block">
+            <span class="time-label freeze">2:45&ndash;3:40</span>
+            <strong>Feature + demo freeze</strong>
+            <p>Test normal, conflict, and insufficient-data paths. Demo freezes at 3:40.</p>
+          </div>
+          <div class="time-block">
+            <span class="time-label">3:40&ndash;4:00</span>
+            <strong>Submission buffer</strong>
+            <p>README, repository, video, final checks, and submission.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="judging">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">06 / Judging</p>
+            <h2>How the build scores</h2>
+          </div>
+          <p class="section-intro">The demo should make each criterion visible without explanation. The workflow is the proof; narration only points to it.</p>
+        </div>
+
+        <ol class="criteria">
+          <li>
+            <div>
+              <h3>Core Requirements &amp; Functionality</h3>
+              <p>Show one complete working workflow from a real question through approval to a visible result.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Innovation &amp; Theme Alignment</h3>
+              <p>Make the surrounding Threads context essential to the agent&rsquo;s decision, not decorative input.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Technical Execution &amp; Integration</h3>
+              <p>Use real integrations where proven and explicit UNKNOWN or failure behavior where they are not.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Usefulness &amp; Agentic Experience</h3>
+              <p>Turn noisy public conversation into one understandable, controllable next action.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="guardrails">
+      <div class="shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">07 / Guardrails</p>
+            <h2>Protect the core</h2>
+          </div>
+          <p class="section-intro">Do not spend the event widening the product or fighting one integration past its decision value.</p>
+        </div>
+
+        <div class="guardrails">
+          <div>
+            <h3>We are NOT building</h3>
+            <ul class="non-goals">
+              <li>A social listening dashboard</li>
+              <li>A generic summarizer</li>
+              <li>A multi-agent framework</li>
+              <li>A RAG platform</li>
+              <li>An analytics suite</li>
+            </ul>
+          </div>
+
+          <aside class="fallback">
+            <span class="fallback-gate">Threads API fallback rule</span>
+            <h3>30-minute hard gate</h3>
+            <p>If live Threads retrieval cannot be proven quickly, stop random API debugging. Switch to a clearly labelled fallback dataset or another available retrieval route.</p>
+            <p class="fallback-rule">Preserve the core ContextProof intelligence: relevant signals &rarr; decision state &rarr; one action &rarr; approval &rarr; visible result. Never present fallback data as live.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-row">
+      <span>ContextProof hackathon execution brief</span>
+      <span>Feature freeze: T+2:45 &nbsp;|&nbsp; Demo freeze: T+3:40</span>
+    </div>
+  </footer>
+</body>
+</html>
