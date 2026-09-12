@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from collections.abc import Awaitable, Callable
@@ -185,6 +186,7 @@ async def _request_search(params: dict[str, str]) -> dict[str, Any]:
 
 async def search_posts(
     query: str,
+    search_queries: list[str] | None = None,
     request_fn: RequestFunction | None = None,
 ) -> PublicContext:
     clean_query = query.strip()
@@ -192,15 +194,74 @@ async def search_posts(
         raise ValueError("Question must contain between 3 and 300 characters.")
 
     limit = min(max(settings.bluesky_result_limit, 1), 40)
-    params = {
-        "q": build_search_query(clean_query),
-        "limit": str(limit),
-        "sort": "top",
-        "lang": settings.bluesky_language,
-    }
-    payload = await (request_fn or _request_search)(params)
-    posts = normalize_posts(payload, clean_query, limit)
-    return PublicContext(query=clean_query, posts=posts)
+    candidates = search_queries or [build_search_query(clean_query)]
+    queries: list[str] = []
+    seen_queries: set[str] = set()
+    for candidate in candidates:
+        candidate = _clean_text(candidate)[:100]
+        normalized = candidate.casefold()
+        if len(candidate) < 2 or normalized in seen_queries:
+            continue
+        seen_queries.add(normalized)
+        queries.append(candidate)
+        if len(queries) == 3:
+            break
+    if not queries:
+        raise ValueError("At least one usable social search query is required.")
+
+    async def retrieve(search_query: str) -> list[PublicPost]:
+        params = {
+            "q": search_query,
+            "limit": str(limit),
+            "sort": "top",
+            "lang": settings.bluesky_language,
+        }
+        payload = await (request_fn or _request_search)(params)
+        return normalize_posts(payload, search_query, limit)
+
+    batches = await asyncio.gather(
+        *(retrieve(search_query) for search_query in queries),
+        return_exceptions=True,
+    )
+    failures = [item for item in batches if isinstance(item, Exception)]
+    successful_batches = [item for item in batches if isinstance(item, list)]
+    if not successful_batches and failures:
+        raise failures[0]
+
+    for search_query, batch in zip(queries, batches, strict=True):
+        if isinstance(batch, Exception):
+            logger.warning(
+                "Bluesky query failed query=%r error=%s",
+                search_query,
+                type(batch).__name__,
+            )
+
+    posts: list[PublicPost] = []
+    seen_ids: set[str] = set()
+    seen_content: set[tuple[str, str]] = set()
+    for batch in successful_batches:
+        for post in batch:
+            signature = (post.author.casefold(), post.text.casefold())
+            if post.id in seen_ids or signature in seen_content:
+                continue
+            seen_ids.add(post.id)
+            seen_content.add(signature)
+            posts.append(post)
+            if len(posts) == limit:
+                break
+        if len(posts) == limit:
+            break
+
+    logger.info(
+        "Bluesky retrieval completed queries=%d posts=%d",
+        len(queries),
+        len(posts),
+    )
+    return PublicContext(
+        query=clean_query,
+        search_queries=queries,
+        posts=posts,
+    )
 
 
 async def publish_to_bluesky(text: str) -> str:

@@ -1,7 +1,14 @@
 import unittest
+from types import SimpleNamespace
 
 from app.bluesky_client import LiveSourceError
-from app.bot import ApprovalStore, approval_markup, format_contextproof, format_failure
+from app.bot import (
+    ApprovalStore,
+    approval_markup,
+    format_contextproof,
+    format_failure,
+    log_incoming_message,
+)
 from app.contextproof import (
     ContextProofResult,
     ContextProofRun,
@@ -45,6 +52,46 @@ def demo_run() -> ContextProofRun:
 
 
 class TelegramPresentationTests(unittest.TestCase):
+    def test_logs_full_incoming_telegram_message_without_bot_credentials(self):
+        text = "Full user question: what should the agent verify before acting?"
+        message = SimpleNamespace(
+            message_id=41,
+            message_thread_id=None,
+            text=text,
+            caption=None,
+            content_type="text",
+            chat=SimpleNamespace(id=-1001, type="supergroup"),
+            from_user=SimpleNamespace(id=7, username="volo", full_name="Volo"),
+        )
+
+        with self.assertLogs("app.bot", level="INFO") as captured:
+            log_incoming_message(message)
+
+        audit_log = "\n".join(captured.output)
+        self.assertIn("telegram.incoming_message", audit_log)
+        self.assertIn(text, audit_log)
+        self.assertIn('"user_id":7', audit_log)
+        self.assertNotIn("BOT_TOKEN", audit_log)
+
+    def test_redacts_tokens_from_incoming_message_log(self):
+        secret = "sk-example-secret-value-123456789"
+        message = SimpleNamespace(
+            message_id=42,
+            message_thread_id=None,
+            text=f"Do not expose {secret}",
+            caption=None,
+            content_type="text",
+            chat=SimpleNamespace(id=1, type="private"),
+            from_user=SimpleNamespace(id=7, username=None, full_name="Volo"),
+        )
+
+        with self.assertLogs("app.bot", level="INFO") as captured:
+            log_incoming_message(message)
+
+        audit_log = "\n".join(captured.output)
+        self.assertNotIn(secret, audit_log)
+        self.assertIn("[REDACTED]", audit_log)
+
     def test_response_contains_required_sections_and_real_links(self):
         text = format_contextproof(demo_run())
 

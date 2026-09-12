@@ -1,9 +1,27 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Awaitable, Callable
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.logger import log_event
+
+
+logger = logging.getLogger(__name__)
+
+
+def _log_pipeline_error(stage: str, error: Exception) -> None:
+    log_event(
+        logger,
+        "pipeline.error",
+        level=logging.ERROR,
+        stage=stage,
+        error_type=type(error).__name__,
+        error_code=getattr(error, "code", None),
+        message=str(error),
+    )
 
 
 class StrictModel(BaseModel):
@@ -21,6 +39,7 @@ class PublicPost(StrictModel):
 
 class PublicContext(StrictModel):
     query: str = Field(min_length=3, max_length=300)
+    search_queries: list[str] = Field(default_factory=list, max_length=3)
     posts: list[PublicPost]
 
 
@@ -144,12 +163,14 @@ def select_evidence(
     return [posts_by_id[post_id] for post_id in ordered_ids[:maximum]]
 
 
-SearchFunction = Callable[[str], Awaitable[PublicContext]]
+GenerateQueriesFunction = Callable[[str], Awaitable[list[str]]]
+SearchFunction = Callable[[str, list[str]], Awaitable[PublicContext]]
 AnalyzeFunction = Callable[[PublicContext], Awaitable[ContextProofResult]]
 
 
 async def run_contextproof(
     question: str,
+    generate_queries_fn: GenerateQueriesFunction | None = None,
     search_fn: SearchFunction | None = None,
     analyze_fn: AnalyzeFunction | None = None,
 ) -> ContextProofRun:
@@ -157,6 +178,11 @@ async def run_contextproof(
     if len(clean_question) < 3 or len(clean_question) > 300:
         raise ValueError("Question must contain between 3 and 300 characters.")
 
+    log_event(logger, "pipeline.started", question=clean_question)
+    if generate_queries_fn is None:
+        from app.llm_client import generate_search_queries
+
+        generate_queries_fn = generate_search_queries
     if search_fn is None:
         from app.bluesky_client import search_posts
 
@@ -166,12 +192,50 @@ async def run_contextproof(
 
         analyze_fn = analyze_context
 
-    context = await search_fn(clean_question)
-    result = await analyze_fn(context)
-    validate_source_integrity(result, context.posts)
+    try:
+        search_queries = await generate_queries_fn(clean_question)
+    except Exception as error:
+        _log_pipeline_error("query_generation", error)
+        raise
+    if not 1 <= len(search_queries) <= 3:
+        raise ValueError("Query generation must return between 1 and 3 queries.")
+    log_event(
+        logger,
+        "pipeline.search_queries_ready",
+        search_queries=search_queries,
+    )
 
-    return ContextProofRun(
+    try:
+        context = await search_fn(clean_question, search_queries)
+    except Exception as error:
+        _log_pipeline_error("social_retrieval", error)
+        raise
+    log_event(
+        logger,
+        "pipeline.retrieval_complete",
+        search_queries=context.search_queries,
+        post_count=len(context.posts),
+    )
+    try:
+        result = await analyze_fn(context)
+        validate_source_integrity(result, context.posts)
+    except Exception as error:
+        _log_pipeline_error("synthesis", error)
+        raise
+
+    log_event(
+        logger,
+        "pipeline.synthesis_complete",
+        supported_signal_count=len(result.supported_signals),
+        conflict_count=len(result.conflicts),
+        unknown_count=len(result.unknowns),
+        recommended_action=result.recommended_action.title,
+    )
+
+    run = ContextProofRun(
         context=context,
         analysis=result,
         evidence=select_evidence(context, result),
     )
+    log_event(logger, "pipeline.completed", evidence_count=len(run.evidence))
+    return run

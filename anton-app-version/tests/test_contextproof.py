@@ -119,7 +119,13 @@ class ContextProofAcceptanceTests(unittest.TestCase):
 
 class ContextProofPipelineTests(unittest.IsolatedAsyncioTestCase):
     async def test_integrated_pipeline_returns_traceable_evidence(self):
-        context = PublicContext(query="AI agents problems", posts=[post(1), post(2)])
+        question = "What blocks teams from trusting AI agents?"
+        search_queries = ["AI agent trust", "agent verification"]
+        context = PublicContext(
+            query=question,
+            search_queries=search_queries,
+            posts=[post(1), post(2)],
+        )
         result = ContextProofResult(
             supported_signals=[
                 SupportedSignal(
@@ -137,18 +143,28 @@ class ContextProofPipelineTests(unittest.IsolatedAsyncioTestCase):
             ),
         )
 
-        async def search_fn(_question):
+        observed = {}
+
+        async def generate_queries_fn(received_question):
+            observed["generation_question"] = received_question
+            return search_queries
+
+        async def search_fn(received_question, received_queries):
+            observed["search"] = (received_question, received_queries)
             return context
 
         async def analyze_fn(_context):
             return result
 
         run = await run_contextproof(
-            context.query,
+            question,
+            generate_queries_fn=generate_queries_fn,
             search_fn=search_fn,
             analyze_fn=analyze_fn,
         )
 
+        self.assertEqual(observed["generation_question"], question)
+        self.assertEqual(observed["search"], (question, search_queries))
         self.assertEqual([item.id for item in run.evidence], [
             context.posts[0].id,
             context.posts[1].id,

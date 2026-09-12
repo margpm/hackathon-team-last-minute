@@ -10,7 +10,7 @@ Implementers should follow this step-by-step logic when building out the message
 
 ### Step 1: Ingestion
 - **Action**: Receive the incoming user message from the Telegram Bot.
-- **Details**: The `aiogram` message handler intercepts the user's text. A "Thinking..." placeholder message should be sent to the user immediately to acknowledge receipt.
+- **Details**: The `aiogram` message handler intercepts the user's text. A "Searching live Bluesky context..." placeholder is sent immediately to acknowledge receipt.
 
 ### Step 2: Query Generation (LLM Call 1)
 - **Action**: Ask the AI model to prepare search keywords based on the user's request.
@@ -31,19 +31,19 @@ Implementers should follow this step-by-step logic when building out the message
 - **Details**:
   - Extract the text content, author, and timestamp from the retrieved posts.
   - Wrap this data into a final instruction prompt.
-  - *Example Format*: 
+  - *Example Format*:
     ```text
     Please answer the user's original request using the following live context from social media:
-    
+
     [Post 1]: "..."
     [Post 2]: "..."
-    
+
     User's original request: {user_message}
     ```
 
 ### Step 5: Synthesis (LLM Call 2)
 - **Action**: Ask the AI model to proceed with the newly constructed instruction.
-- **Details**: 
+- **Details**:
   - Send the heavily contextualized prompt (from Step 4) back to the LLM via `litellm`.
   - The model will read the live social media posts and synthesize an accurate, up-to-date response.
 
@@ -58,5 +58,13 @@ Implementers should follow this step-by-step logic when building out the message
 
 ## Architectural Notes for Implementers
 * **Asynchrony**: Both LLM calls and social media API calls are I/O bound. Ensure `await` is used properly so the bot event loop is not blocked.
-* **Error Handling**: If Step 3 (Retrieval) fails or returns no results, Step 5 should still proceed but the prompt should indicate that no live context was found, forcing the LLM to rely on its base knowledge.
+* **Error Handling**: If retrieval fails, return an explicit live-source error. If retrieval succeeds with no relevant posts, Step 5 proceeds with an empty evidence set and must return an honest `UNKNOWN` plus one evidence-gathering action. The model must not substitute unsupported base knowledge.
 * **Modularity**: Keep the LLM calls in `llm_client.py` and the social media fetching logic in their respective clients (`bluesky_client.py`). The orchestration of these steps should occur in a dedicated pipeline function called by the `bot.py` message handler.
+
+## Implemented Runtime Mapping
+
+- `app/bot.py`: Telegram ingestion, immediate acknowledgement, delivery, approval, and complete incoming-message audit events.
+- `app/llm_client.py`: query-generation and structured synthesis calls, including full model request instructions and response content in logs.
+- `app/bluesky_client.py`: asynchronous 1-3 query retrieval, normalization, relevance filtering, and cross-query deduplication.
+- `app/contextproof.py`: pipeline orchestration, source-integrity validation, key-stage events, and explicit stage errors.
+- `data/logs/app.log`: UTF-8 rotating application log. Configured credentials and common token formats are redacted before writing.

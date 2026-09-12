@@ -12,6 +12,7 @@ from app.bluesky_client import LiveSourceError
 from app.config import settings
 from app.contextproof import ContextProofRun, SourceIntegrityError, run_contextproof
 from app.llm_client import ContextProofModelError
+from app.logger import log_event
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,24 @@ class ApprovalStore:
 
 
 approval_store = ApprovalStore()
+
+
+def log_incoming_message(message: types.Message) -> None:
+    user = message.from_user
+    chat = message.chat
+    log_event(
+        logger,
+        "telegram.incoming_message",
+        message_id=message.message_id,
+        message_thread_id=message.message_thread_id,
+        chat_id=chat.id,
+        chat_type=str(chat.type),
+        user_id=user.id if user else None,
+        username=user.username if user else None,
+        full_name=user.full_name if user else None,
+        content_type=str(message.content_type),
+        text=message.text if message.text is not None else message.caption,
+    )
 
 
 def _clip(value: str, maximum: int = 360) -> str:
@@ -145,6 +164,7 @@ def format_failure(error: Exception) -> str:
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
+    log_incoming_message(message)
     await message.answer(
         "ContextProof finds which public context matters before an agent acts.\n\n"
         "Send one real question. I will search live Bluesky posts, separate "
@@ -154,8 +174,8 @@ async def cmd_start(message: types.Message):
 
 @dp.message(F.text)
 async def handle_message(message: types.Message):
+    log_incoming_message(message)
     user_id = message.from_user.id if message.from_user else 0
-    logger.info("ContextProof request received from Telegram user %s.", user_id)
     loading_msg = await message.reply("Searching live Bluesky context...")
     try:
         run = await run_contextproof(message.text or "")
@@ -166,7 +186,14 @@ async def handle_message(message: types.Message):
             disable_web_page_preview=True,
         )
     except Exception as error:
-        logger.error("ContextProof request failed: %s", type(error).__name__)
+        log_event(
+            logger,
+            "telegram.request_failed",
+            level=logging.ERROR,
+            error_type=type(error).__name__,
+            error_code=getattr(error, "code", None),
+            message=str(error),
+        )
         await loading_msg.edit_text(format_failure(error))
 
 
@@ -175,9 +202,21 @@ async def approve_action(callback: types.CallbackQuery):
     token = (callback.data or "").partition(":")[2]
     approval = approval_store.consume(token, callback.from_user.id)
     if approval is None:
+        log_event(
+            logger,
+            "approval.rejected",
+            user_id=callback.from_user.id,
+            reason="expired_or_wrong_owner",
+        )
         await callback.answer("Approval expired or belongs to another user.", show_alert=True)
         return
 
+    log_event(
+        logger,
+        "approval.accepted",
+        user_id=callback.from_user.id,
+        action=approval.action,
+    )
     await callback.answer("Action approved")
     if callback.message:
         await callback.message.edit_reply_markup(reply_markup=None)

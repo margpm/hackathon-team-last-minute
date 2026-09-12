@@ -3,7 +3,11 @@ import unittest
 from types import SimpleNamespace
 
 from app.contextproof import PublicContext, PublicPost
-from app.llm_client import ContextProofModelError, analyze_context
+from app.llm_client import (
+    ContextProofModelError,
+    analyze_context,
+    generate_search_queries,
+)
 
 
 def context() -> PublicContext:
@@ -51,6 +55,50 @@ def response(payload: dict):
     )
 
 
+def text_response(content: str):
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content=content),
+            )
+        ]
+    )
+
+
+class SearchQueryGenerationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_generates_bounded_queries_and_logs_full_exchange(self):
+        question = "What blocks teams from trusting AI agents in production?"
+        model_reply = "AI agent trust, production verification, human approval"
+        observed = None
+
+        async def completion_fn(**kwargs):
+            nonlocal observed
+            observed = kwargs
+            return text_response(model_reply)
+
+        with self.assertLogs("app.llm_client", level="INFO") as captured:
+            queries = await generate_search_queries(
+                question,
+                completion_fn=completion_fn,
+                model="gpt-4o-mini",
+            )
+
+        self.assertEqual(
+            queries,
+            ["AI agent trust", "production verification", "human approval"],
+        )
+        self.assertEqual(observed["model"], "gpt-4o-mini")
+        self.assertEqual(observed["temperature"], 0)
+
+        audit_log = "\n".join(captured.output)
+        self.assertIn("llm.request", audit_log)
+        self.assertIn("query_generation", audit_log)
+        self.assertIn(question, audit_log)
+        self.assertIn("Output only", audit_log)
+        self.assertIn("llm.response", audit_log)
+        self.assertIn(model_reply, audit_log)
+
+
 class OpenAIStructuredOutputTests(unittest.IsolatedAsyncioTestCase):
     async def test_requests_strict_structured_output_and_validates_ids(self):
         source_context = context()
@@ -61,16 +109,24 @@ class OpenAIStructuredOutputTests(unittest.IsolatedAsyncioTestCase):
             observed = kwargs
             return response(valid_payload(source_context))
 
-        result = await analyze_context(
-            source_context,
-            completion_fn=completion_fn,
-            model="gpt-4o-mini",
-        )
+        with self.assertLogs("app.llm_client", level="INFO") as captured:
+            result = await analyze_context(
+                source_context,
+                completion_fn=completion_fn,
+                model="gpt-4o-mini",
+            )
 
         self.assertEqual(observed["model"], "gpt-4o-mini")
         self.assertEqual(observed["response_format"]["type"], "json_schema")
         self.assertTrue(observed["response_format"]["json_schema"]["strict"])
         self.assertEqual(len(result.supported_signals), 1)
+
+        audit_log = "\n".join(captured.output)
+        self.assertIn("llm.request", audit_log)
+        self.assertIn("synthesis", audit_log)
+        self.assertIn(source_context.posts[0].text, audit_log)
+        self.assertIn("llm.response", audit_log)
+        self.assertIn("Verification is a repeated concern.", audit_log)
 
     async def test_fails_closed_when_model_invents_a_source_id(self):
         source_context = context()

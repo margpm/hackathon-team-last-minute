@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -16,6 +17,7 @@ from app.contextproof import (
     SourceIntegrityError,
     validate_source_integrity,
 )
+from app.logger import log_event
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,26 @@ class ContextProofModelError(RuntimeError):
 
 CompletionFunction = Callable[..., Awaitable[Any]]
 
+SEARCH_QUERY_SYSTEM_INSTRUCTION = (
+    "You prepare search queries for live public social-media retrieval. "
+    "Read the user's original request. Output only a comma-separated list "
+    "of 1 to 3 concise search queries optimized for Bluesky or Threads. "
+    "Preserve the user's key entities and intent. Do not answer the request, "
+    "explain your choices, number the queries, or add any other text."
+)
+
+
+def _log_model_error(stage: str, error: Exception) -> None:
+    log_event(
+        logger,
+        "llm.error",
+        level=logging.ERROR,
+        stage=stage,
+        error_type=type(error).__name__,
+        error_code=getattr(error, "code", None),
+        message=str(error),
+    )
+
 
 def _response_content(response: Any) -> str:
     try:
@@ -54,6 +76,84 @@ def _response_content(response: Any) -> str:
     return content
 
 
+def _parse_search_queries(content: str) -> list[str]:
+    candidates = re.split(r"[,;\n]+", content)
+    queries: list[str] = []
+    seen: set[str] = set()
+
+    for candidate in candidates:
+        cleaned = re.sub(r"^\s*(?:[-*]|\d+[.)])\s*", "", candidate)
+        cleaned = " ".join(cleaned.strip(" \t\r\n\"'").split())
+        normalized = cleaned.casefold()
+        if len(cleaned) < 2 or normalized in seen:
+            continue
+        seen.add(normalized)
+        queries.append(cleaned[:100])
+        if len(queries) == 3:
+            break
+
+    if not queries:
+        raise ContextProofModelError(
+            "OPENAI_INVALID_QUERY_OUTPUT",
+            "OpenAI returned no usable social search queries.",
+        )
+    return queries
+
+
+async def generate_search_queries(
+    question: str,
+    completion_fn: CompletionFunction | None = None,
+    model: str | None = None,
+) -> list[str]:
+    clean_question = question.strip()
+    if len(clean_question) < 3 or len(clean_question) > 300:
+        raise ValueError("Question must contain between 3 and 300 characters.")
+    if completion_fn is None and not settings.openai_api_key:
+        raise ContextProofModelError(
+            "OPENAI_NOT_CONFIGURED",
+            "OPENAI_API_KEY is required for live ContextProof analysis.",
+        )
+
+    selected_model = model or settings.active_model
+    messages = [
+        {"role": "system", "content": SEARCH_QUERY_SYSTEM_INSTRUCTION},
+        {"role": "user", "content": clean_question},
+    ]
+    request = {
+        "model": selected_model,
+        "messages": messages,
+        "temperature": 0,
+        "max_tokens": 80,
+    }
+    log_event(
+        logger,
+        "llm.request",
+        stage="query_generation",
+        **request,
+    )
+
+    try:
+        response = await (completion_fn or litellm.acompletion)(**request)
+        content = _response_content(response)
+        log_event(
+            logger,
+            "llm.response",
+            stage="query_generation",
+            model=selected_model,
+            content=content,
+        )
+        return _parse_search_queries(content)
+    except ContextProofModelError as error:
+        _log_model_error("query_generation", error)
+        raise
+    except Exception as error:
+        _log_model_error("query_generation", error)
+        raise ContextProofModelError(
+            "OPENAI_QUERY_REQUEST_FAILED",
+            "OpenAI search-query generation failed before retrieval.",
+        ) from error
+
+
 async def analyze_context(
     context: PublicContext,
     completion_fn: CompletionFunction | None = None,
@@ -65,6 +165,7 @@ async def analyze_context(
             "OPENAI_API_KEY is required for live ContextProof analysis.",
         )
 
+    selected_model = model or settings.active_model
     schema = ContextProofResult.model_json_schema()
     messages = [
         {
@@ -89,32 +190,45 @@ async def analyze_context(
         },
     ]
 
-    try:
-        response = await (completion_fn or litellm.acompletion)(
-            model=model or settings.active_model,
-            messages=messages,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "contextproof_result",
-                    "strict": True,
-                    "schema": schema,
-                },
+    request = {
+        "model": selected_model,
+        "messages": messages,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "contextproof_result",
+                "strict": True,
+                "schema": schema,
             },
-            temperature=0,
-            max_tokens=1600,
+        },
+        "temperature": 0,
+        "max_tokens": 1600,
+    }
+    log_event(logger, "llm.request", stage="synthesis", **request)
+
+    try:
+        response = await (completion_fn or litellm.acompletion)(**request)
+        content = _response_content(response)
+        log_event(
+            logger,
+            "llm.response",
+            stage="synthesis",
+            model=selected_model,
+            content=content,
         )
-        result = ContextProofResult.model_validate_json(_response_content(response))
+        result = ContextProofResult.model_validate_json(content)
         return validate_source_integrity(result, context.posts)
-    except ContextProofModelError:
+    except ContextProofModelError as error:
+        _log_model_error("synthesis", error)
         raise
     except (ValidationError, SourceIntegrityError, json.JSONDecodeError) as error:
+        _log_model_error("synthesis", error)
         raise ContextProofModelError(
             "OPENAI_INVALID_OUTPUT",
             "OpenAI output failed the ContextProof integrity check.",
         ) from error
     except Exception as error:
-        logger.error("OpenAI ContextProof analysis failed: %s", type(error).__name__)
+        _log_model_error("synthesis", error)
         raise ContextProofModelError(
             "OPENAI_REQUEST_FAILED",
             "OpenAI analysis failed before any result was produced.",

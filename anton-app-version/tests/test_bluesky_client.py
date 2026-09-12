@@ -69,6 +69,54 @@ class BlueskyNormalizationTests(unittest.TestCase):
 
 
 class BlueskySearchTests(unittest.IsolatedAsyncioTestCase):
+    async def test_searches_all_generated_queries_and_deduplicates_results(self):
+        observed_queries = []
+        shared = raw_post(
+            "shared",
+            "AI agent trust improves when human approval is visible.",
+        )
+
+        async def request_fn(params):
+            observed_queries.append(params["q"])
+            if params["q"] == "AI agent trust":
+                return {
+                    "posts": [
+                        shared,
+                        raw_post(
+                            "trust",
+                            "AI agent trust depends on production verification.",
+                            did="did:plc:bob",
+                            handle="bob.example",
+                        ),
+                    ]
+                }
+            return {
+                "posts": [
+                    shared,
+                    raw_post(
+                        "approval",
+                        "Human approval should gate consequential agent actions.",
+                        did="did:plc:carol",
+                        handle="carol.example",
+                    ),
+                ]
+            }
+
+        context = await search_posts(
+            "What blocks teams from trusting AI agents in production?",
+            search_queries=["AI agent trust", "human approval"],
+            request_fn=request_fn,
+        )
+
+        self.assertEqual(observed_queries, ["AI agent trust", "human approval"])
+        self.assertEqual(
+            context.query,
+            "What blocks teams from trusting AI agents in production?",
+        )
+        self.assertEqual(context.search_queries, ["AI agent trust", "human approval"])
+        self.assertEqual(len(context.posts), 3)
+        self.assertEqual(len({post.id for post in context.posts}), 3)
+
     async def test_search_uses_public_query_and_demo_safe_limit(self):
         observed_params = None
 
