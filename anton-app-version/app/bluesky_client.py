@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 from collections.abc import Awaitable, Callable
@@ -219,10 +218,13 @@ async def search_posts(
         payload = await (request_fn or _request_search)(params)
         return normalize_posts(payload, search_query, limit)
 
-    batches = await asyncio.gather(
-        *(retrieve(search_query) for search_query in queries),
-        return_exceptions=True,
-    )
+    batches: list[list[PublicPost] | Exception] = []
+    for search_query in queries:
+        try:
+            batches.append(await retrieve(search_query))
+        except Exception as error:
+            batches.append(error)
+
     failures = [item for item in batches if isinstance(item, Exception)]
     successful_batches = [item for item in batches if isinstance(item, list)]
     if not successful_batches and failures:

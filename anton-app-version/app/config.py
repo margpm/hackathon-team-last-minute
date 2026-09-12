@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # Public Bluesky AppView; app.bsky.feed.searchPosts is an unauthenticated GET.
     bluesky_search_url: str = (
-        "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
+        "https://api.bsky.app/xrpc/app.bsky.feed.searchPosts"
     )
     bluesky_result_limit: int = 30
     bluesky_timeout_seconds: float = 15.0
