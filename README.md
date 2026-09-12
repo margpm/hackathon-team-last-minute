@@ -1,74 +1,61 @@
-# ContextProof
+# LMCP — LastMinuteContextProof
 
-ContextProof turns relevant public conversation context into one evidence-bound next action with human approval.
+**An agent that figures out which context actually matters before it acts.**
 
-    QUESTION -> DATA -> CONFIRMED / CONFLICT / UNKNOWN -> ONE ACTION -> APPROVAL
+## The problem
 
-## Quickstart
+AI agents today can read a huge amount of information, but they don't know what's actually important, what's outdated, what conflicts, and what's still unknown. Feeding an agent more raw context doesn't fix this — it just means the agent is confidently wrong with more data.
 
-Requirements: Node.js 22 or newer. No package install or build step is required.
+## What we're building
 
-    node server.js
+LMCP is an agent that reads difficult, noisy public context from Threads and turns it into the single best next action — instead of another summary nobody trusts.
 
-Open http://127.0.0.1:4173.
+Rather than just aggregating opinions, LMCP separates:
+- **Facts** — what people actually agree on
+- **Conflicts** — where opinions clearly contradict each other
+- **Unknowns** — what still isn't known, based on what's been read
 
-## Architecture
+Then it recommends one concrete, useful action grounded in that understanding, and a human approves it before the agent acts.
 
-- `server.js`: minimal HTTP server, static UI, health and analysis endpoints.
-- `src/context-provider.js`: one normalized context boundary for live and fallback data.
-- `src/threads-adapter.js`: official Threads keyword-search adapter.
-- `src/openai-analyzer.js`: OpenAI Responses API with strict structured output.
-- `src/contextproof.js`: deterministic fallback analyzer and source-integrity gate.
-- `public/`: responsive single-screen product UI.
-- `data/demo-fallback.json`: clearly labelled synthetic hackathon evidence.
+## How it works
 
-Normalized posts always use this core shape:
+```
+many Threads posts
+      ↓
+understand the real context
+      ↓
+separate facts, conflicts, and unknowns
+      ↓
+recommend one useful action
+      ↓
+human approves
+      ↓
+agent acts
+      ↓
+result is checked
+```
 
-    {
-      "query": "...",
-      "posts": [{
-        "id": "...",
-        "text": "...",
-        "author": "...",
-        "url": "...",
-        "created_at": "..."
-      }]
-    }
+## Example
 
-Every CONFIRMED or CONFLICT reference is checked against the retrieved post IDs before a result is returned.
+A founder wants to know what people really think about a new AI product.
 
-## Data modes
+LMCP searches Threads, reads through many different opinions, and surfaces repeated problems, contradictions, and strong signals. Instead of a generic summary, it responds with:
 
-The zero-config default is `DEMO_FALLBACK_DATA`. It uses synthetic local posts and deterministic analysis; the UI labels both facts explicitly.
+> **This is what people agree on.**
+> **This is where opinions conflict.**
+> **This is what we still don't know.**
+> **Based on this, here's the best next action.**
 
-For live Threads retrieval and structured OpenAI analysis, set:
+The user reviews and approves the action, and only then does the agent act.
 
-    CONTEXT_DATA_MODE=LIVE_THREADS
-    THREADS_ACCESS_TOKEN=<secret>
-    OPENAI_API_KEY=<secret>
+## Why this is different
 
-Optional:
+Our advantage isn't just more context — it's knowing which context matters *before* an agent acts. That's what makes the recommended action trustworthy enough to approve, instead of one more AI-generated guess.
 
-    OPENAI_MODEL=gpt-5.5
+## Data source
 
-Then run `node server.js`. Live mode fails explicitly when credentials, Threads retrieval, model access, or output integrity fail. It never silently presents fallback as live.
+LMCP pulls public context from Threads via the Threads API (keyword search, and optionally publishing). See [`docs/threads_api_setup_guide.md`](docs/threads_api_setup_guide.md) for how to generate the access token and permissions needed (`threads_basic`, `threads_keyword_search`, and optionally `threads_content_publish`).
 
-## Test
+## Status
 
-    node --test
-
-The suite covers:
-
-- SUPPORT: multiple aligned posts produce CONFIRMED.
-- CONFLICT: opposing material signals produce CONFLICT.
-- INSUFFICIENT: weak context produces UNKNOWN.
-- Source integrity: invented or duplicate references fail closed.
-- Threads and OpenAI adapters through mocked network boundaries.
-- Visible fallback labelling and model/API failure survival.
-- HTTP query-to-result integration.
-
-## Hackathon scope
-
-This repository intentionally contains one local vertical slice. It does not include authentication, a database, queues, RAG, multi-agent orchestration, analytics dashboards, deployment automation, or external action execution.
-
-`APPROVE` produces the deterministic local state `ACTION APPROVED`. See `TEAM_BRIEF.html` for team roles, timing, fallback policy, and judging alignment.
+Work in progress — built during a hackathon. Architecture and stack are still being finalized.
