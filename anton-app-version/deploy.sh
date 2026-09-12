@@ -19,6 +19,13 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
+# Generate self-signed certificates for HTTPS if they don't exist
+mkdir -p certs
+if [ ! -f certs/cert.pem ] || [ ! -f certs/key.pem ]; then
+    echo "Generating self-signed SSL certificates for HTTPS..."
+    openssl req -x509 -newkey rsa:4096 -nodes -out certs/cert.pem -keyout certs/key.pem -days 365 -subj "/CN=localhost"
+fi
+
 echo "Building and starting the bot..."
 # Use docker compose plugin
 docker compose up --build -d

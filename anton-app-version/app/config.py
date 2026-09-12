@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     gemini_api_key: str | None = None
     anthropic_api_key: str | None = None
+    
+    # Meta Threads API OAuth
+    meta_client_id: str | None = None
+    meta_client_secret: str | None = None
+    meta_redirect_uri: str = "https://your-domain.com/callback"
 
     class Config:
         env_file = ".env"
