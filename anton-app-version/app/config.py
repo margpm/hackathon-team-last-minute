@@ -1,8 +1,11 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    bot_token: str
-    active_model: str = "gpt-3.5-turbo" # Default model, easily switchable to "gemini/gemini-pro" or "claude-3-opus-20240229"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    bot_token: str | None = None
+    active_model: str = "gpt-4o-mini"
     
     # API keys for different providers
     openai_api_key: str | None = None
@@ -18,8 +21,16 @@ class Settings(BaseSettings):
     bluesky_handle: str | None = None
     bluesky_app_password: str | None = None
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    # Public Bluesky AppView; app.bsky.feed.searchPosts is an unauthenticated GET.
+    bluesky_search_url: str = (
+        "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
+    )
+    bluesky_result_limit: int = 30
+    bluesky_timeout_seconds: float = 15.0
+    bluesky_language: str = "en"
+
+    app_host: str = "0.0.0.0"
+    app_port: int = 8000
+
 
 settings = Settings()

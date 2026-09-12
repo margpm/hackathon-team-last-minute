@@ -36,6 +36,8 @@ def setup_logging():
     # Reduce noise from chatty external libraries
     logging.getLogger("aiosqlite").setLevel(logging.WARNING)
     logging.getLogger("aiogram").setLevel(logging.INFO)
+    logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+    logging.getLogger("litellm").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     

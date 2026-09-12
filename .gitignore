@@ -218,3 +218,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 .idea
+
+# Anton app runtime state and local certificates
+anton-app-version/data/
+anton-app-version/certs/

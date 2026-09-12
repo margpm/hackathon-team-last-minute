@@ -1,61 +1,47 @@
-# LMCP — LastMinuteContextProof
+# ContextProof
 
-**An agent that figures out which context actually matters before it acts.**
+**An agent that knows which public context matters before it acts.**
 
-## The problem
+ContextProof turns noisy public conversation into a controlled decision:
 
-AI agents today can read a huge amount of information, but they don't know what's actually important, what's outdated, what conflicts, and what's still unknown. Feeding an agent more raw context doesn't fix this — it just means the agent is confidently wrong with more data.
-
-## What we're building
-
-LMCP is an agent that reads difficult, noisy public context from Threads and turns it into the single best next action — instead of another summary nobody trusts.
-
-Rather than just aggregating opinions, LMCP separates:
-- **Facts** — what people actually agree on
-- **Conflicts** — where opinions clearly contradict each other
-- **Unknowns** — what still isn't known, based on what's been read
-
-Then it recommends one concrete, useful action grounded in that understanding, and a human approves it before the agent acts.
-
-## How it works
-
-```
-many Threads posts
-      ↓
-understand the real context
-      ↓
-separate facts, conflicts, and unknowns
-      ↓
-recommend one useful action
-      ↓
-human approves
-      ↓
-agent acts
-      ↓
-result is checked
+```text
+Telegram question
+-> live Bluesky posts
+-> SUPPORTED SIGNAL / CONFLICT / UNKNOWN
+-> one best next action
+-> human approval
+-> ACTION APPROVED
 ```
 
-## Example
+`SUPPORTED SIGNAL` means multiple relevant observed posts support the same point. It does not mean objective truth. Every supported signal, conflict, and evidence-backed action must reference a post ID returned by the live search.
 
-A founder wants to know what people really think about a new AI product.
+## Primary runtime
 
-LMCP searches Threads, reads through many different opinions, and surfaces repeated problems, contradictions, and strong signals. Instead of a generic summary, it responds with:
+The judge-facing application is the existing Python service in `anton-app-version/`:
 
-> **This is what people agree on.**
-> **This is where opinions conflict.**
-> **This is what we still don't know.**
-> **Based on this, here's the best next action.**
+- Telegram is the primary interface.
+- Bluesky `app.bsky.feed.searchPosts` supplies public context without authentication.
+- OpenAI structured output runs through the existing LiteLLM dependency.
+- An inline `APPROVE` button produces the visible `ACTION APPROVED` state.
+- FastAPI exposes `/health`; existing Threads OAuth remains available as stretch work.
 
-The user reviews and approves the action, and only then does the agent act.
+Configure `anton-app-version/.env` from `.env.example`, then run:
 
-## Why this is different
+```text
+cd anton-app-version
+python -m app.main
+```
 
-Our advantage isn't just more context — it's knowing which context matters *before* an agent acts. That's what makes the recommended action trustworthy enough to approve, instead of one more AI-generated guess.
+Required for the live flow: `BOT_TOKEN` and `OPENAI_API_KEY`. Secrets stay outside Git. Bluesky search failures return `LIVE_SOURCE_ERROR`; OpenAI failures return `MODEL_ERROR`; neither path silently substitutes fake analysis.
 
-## Data source
+Run the acceptance suite from `anton-app-version/`:
 
-LMCP pulls public context from Threads via the Threads API (keyword search, and optionally publishing). See [`docs/threads_api_setup_guide.md`](docs/threads_api_setup_guide.md) for how to generate the access token and permissions needed (`threads_basic`, `threads_keyword_search`, and optionally `threads_content_publish`).
+```text
+python -m unittest discover -s tests -v
+```
 
-## Status
+## Secondary web demo
 
-Work in progress — built during a hackathon. Architecture and stack are still being finalized.
+The earlier zero-build ContextProof screen remains at the repository root as a clearly labelled fallback demonstration. Run `node server.js` and open `http://127.0.0.1:4173`. It is secondary to the live Telegram flow.
+
+See `TEAM_BRIEF.html` for the locked team scope, timeline, fallback gate, and judging alignment.

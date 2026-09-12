@@ -9,6 +9,26 @@ logger = logging.getLogger(__name__)
 
 web_app = FastAPI()
 
+
+@web_app.get("/")
+async def root():
+    return {
+        "service": "ContextProof",
+        "surface": "telegram",
+        "source": "bluesky",
+        "status": "running",
+    }
+
+
+@web_app.get("/health")
+async def health():
+    return {
+        "status": "ok",
+        "telegram_configured": bool(settings.bot_token),
+        "openai_configured": bool(settings.openai_api_key),
+        "bluesky_source": "public_appview",
+    }
+
 @web_app.get("/login", response_class=HTMLResponse)
 async def login(telegram_id: str = "unknown"):
     """

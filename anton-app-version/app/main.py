@@ -1,6 +1,7 @@
 import uvicorn
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from app.logger import setup_logging
 
@@ -10,9 +11,9 @@ logger = logging.getLogger(__name__)
 setup_logging()
 
 from app.bot import start_bot
+from app.config import settings
 from app.web import web_app
 from app.database import init_db, get_all_tokens
-import os
 
 @asynccontextmanager
 async def lifespan(app):
@@ -24,31 +25,36 @@ async def lifespan(app):
     tokens = await get_all_tokens()
     logger.info(f"Loaded {len(tokens)} long-lived Meta tokens from database.")
     
-    # Start the telegram bot in the background
-    logger.info("Starting Telegram Bot...")
-    task = asyncio.create_task(start_bot())
+    task = None
+    if settings.bot_token:
+        logger.info("Starting ContextProof Telegram bot...")
+        task = asyncio.create_task(start_bot())
+    else:
+        logger.warning("BOT_TOKEN is not configured; Telegram polling is disabled.")
     yield
-    # Cleanup on shutdown (cancel the bot task if needed)
-    task.cancel()
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 web_app.router.lifespan_context = lifespan
 
 if __name__ == "__main__":
-    import os
-    
     ssl_keyfile = "certs/key.pem"
     ssl_certfile = "certs/cert.pem"
-    
-    if not os.path.exists(ssl_keyfile) or not os.path.exists(ssl_certfile):
-        logger.error("SSL certificates not found! Please run deploy.sh to generate them.")
-        exit(1)
-        
-    # Run the web server using HTTPS only
+    ssl_options = {}
+    if os.path.exists(ssl_keyfile) and os.path.exists(ssl_certfile):
+        ssl_options = {"ssl_keyfile": ssl_keyfile, "ssl_certfile": ssl_certfile}
+        logger.info("Starting HTTPS with the configured certificate files.")
+    else:
+        logger.warning("No certificate files found; starting HTTP for local/runtime health.")
+
     uvicorn.run(
-        "app.main:web_app", 
-        host="0.0.0.0", 
-        port=8000, 
+        "app.main:web_app",
+        host=settings.app_host,
+        port=settings.app_port,
         reload=False,
-        ssl_keyfile=ssl_keyfile,
-        ssl_certfile=ssl_certfile
+        **ssl_options,
     )
